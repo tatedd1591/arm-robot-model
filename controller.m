@@ -1,0 +1,891 @@
+function varargout = controller(varargin)
+% CONTROLLER MATLAB code for controller.fig
+%      CONTROLLER, by itself, creates a new CONTROLLER or raises the existing
+%      singleton*.
+%
+%      H = CONTROLLER returns the handle to a new CONTROLLER or the handle to
+%      the existing singleton*.
+%
+%      CONTROLLER('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in CONTROLLER.M with the given input arguments.
+%
+%      CONTROLLER('Property','Value',...) creates a new CONTROLLER or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before controller_OpeningFcn gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to controller_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help controller
+
+% Last Modified by GUIDE v2.5 29-Dec-2022 04:21:24
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @controller_OpeningFcn, ...
+                   'gui_OutputFcn',  @controller_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+
+
+% --- Executes just before controller is made visible.
+function controller_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to controller (see VARARGIN)
+
+% Choose default command line output for controller
+handles.output = hObject;
+
+% Update handles structure
+guidata(hObject, handles);
+
+% UIWAIT makes controller wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = controller_OutputFcn(hObject, eventdata, handles) 
+% varargout  cell array for returning output args (see VARARGOUT);
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Get default command line output from handles structure
+varargout{1} = handles.output;
+
+
+% --- Executes on button press in START.
+function START_Callback(hObject, eventdata, handles)
+% hObject    handle to START (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%Open Simulink model
+open_system(ModelName)
+
+set_param(ModelName,'BlockReduction','off');
+% set the stop time to inf
+set_param(ModelName,'StopTime','inf');
+% set the simulation mode to normal
+set_param(ModelName,'SimulationMode','normal');
+% When the model starts
+set_param(ModelName,'StartFcn','1'); 
+% Start the model
+set_param(ModelName, 'SimulationCommand', 'start');
+
+% --- Executes on slider movement.
+function slider1_Callback(hObject, eventdata, handles)
+% hObject    handle to slider1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%D-H value
+syms theta1 theta2 theta3 theta4 theta5;
+syms posx posy posz ;
+a1 = 150;   alpha1 =  -pi/2;  d1 = 0;
+a2 = 250;   alpha2 = 0;           d2 = 0; 
+a3 = 220;   alpha3 = 0 ;          d3 = 0;
+a4 = 0  ;   alpha4 =  -pi/2;  d4 = 0;
+a5 = 0  ;   alpha5 = 0 ;          d5 = 80; 
+
+%lay gia tri goc tu khoi slider
+theta1=get(handles.slider1,'value');
+set(handles.textq1,'string',num2str(theta1));
+theta2=get(handles.slider2,'value');
+set(handles.textq2,'string',num2str(theta2));
+theta3=get(handles.slider3,'value');
+set(handles.textq3,'string',num2str(theta3));
+theta4=get(handles.slider4,'value');
+set(handles.textq4,'string',num2str(theta4));
+
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+%calculate function
+theta1=theta1*pi/180;
+theta2=theta2*pi/180-pi/2;
+theta3=theta3*pi/180+pi/2;
+theta4=theta4*pi/180-pi/2;
+theta5=0;
+T10 = [cos(theta1) ,-sin(theta1)*cos(alpha1), sin(theta1)*sin(alpha1), a1*cos(theta1);
+     sin(theta1), cos(theta1)*cos(alpha1), -cos(theta1)*sin(alpha1), a1*sin(theta1);
+     0 , sin(alpha1),cos(alpha1), d1;
+     0 , 0, 0, 1 ];
+
+T21 = [cos(theta2) ,-sin(theta2)*cos(alpha2), sin(theta2)*sin(alpha2), a2*cos(theta2);
+     sin(theta2), cos(theta2)*cos(alpha2), -cos(theta2)*sin(alpha2), a2*sin(theta2);
+     0 , sin(alpha2),cos(alpha2), d2;
+     0 , 0, 0, 1 ];
+
+T32 = [cos(theta3) ,-sin(theta3)*cos(alpha3), sin(theta3)*sin(alpha3), a3*cos(theta3);
+     sin(theta3), cos(theta3)*cos(alpha3), -cos(theta3)*sin(alpha3), a3*sin(theta3);
+     0 , sin(alpha3),cos(alpha3), d3;
+     0 , 0, 0, 1 ];
+
+T43 = [cos(theta4) ,-sin(theta4)*cos(alpha4), sin(theta4)*sin(alpha4), a4*cos(theta4);
+     sin(theta4), cos(theta4)*cos(alpha4), -cos(theta4)*sin(alpha4), a4*sin(theta4);
+     0 , sin(alpha4),cos(alpha4), d4;
+     0 , 0, 0, 1 ];
+
+T54 = [cos(theta5) ,-sin(theta5)*cos(alpha5), sin(theta5)*sin(alpha5), a5*cos(theta5);
+     sin(theta5), cos(theta5)*cos(alpha5), -cos(theta5)*sin(alpha5), a5*sin(theta5);
+     0 , sin(alpha5),cos(alpha5), d5;
+     0 , 0, 0, 1 ];
+
+T50 = T10*T21*T32*T43*T54;
+
+posx=T50(1,4);
+posy=T50(2,4);
+posz=T50(3,4);
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+% --- Executes during object creation, after setting all properties.
+function slider1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textq1_Callback(hObject, eventdata, handles)
+% hObject    handle to textq1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textq1 as text
+%        str2double(get(hObject,'String')) returns contents of textq1 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textq1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textq1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function slider2_Callback(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%D-H value
+syms theta1 theta2 theta3 theta4 theta5;
+syms posx posy posz ;
+a1 = 150;   alpha1 =  -pi/2;  d1 = 0;
+a2 = 250;   alpha2 = 0;           d2 = 0; 
+a3 = 220;   alpha3 = 0 ;          d3 = 0;
+a4 = 0  ;   alpha4 =  -pi/2;  d4 = 0;
+a5 = 0  ;   alpha5 = 0 ;          d5 = 80; 
+
+%lay gia tri goc tu khoi slider
+theta1=get(handles.slider1,'value');
+set(handles.textq1,'string',num2str(theta1));
+theta2=get(handles.slider2,'value');
+set(handles.textq2,'string',num2str(theta2));
+theta3=get(handles.slider3,'value');
+set(handles.textq3,'string',num2str(theta3));
+theta4=get(handles.slider4,'value');
+set(handles.textq4,'string',num2str(theta4));
+
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+%calculate function
+theta1=theta1*pi/180;
+theta2=theta2*pi/180-pi/2;
+theta3=theta3*pi/180+pi/2;
+theta4=theta4*pi/180-pi/2;
+theta5=0;
+T10 = [cos(theta1) ,-sin(theta1)*cos(alpha1), sin(theta1)*sin(alpha1), a1*cos(theta1);
+     sin(theta1), cos(theta1)*cos(alpha1), -cos(theta1)*sin(alpha1), a1*sin(theta1);
+     0 , sin(alpha1),cos(alpha1), d1;
+     0 , 0, 0, 1 ];
+
+T21 = [cos(theta2) ,-sin(theta2)*cos(alpha2), sin(theta2)*sin(alpha2), a2*cos(theta2);
+     sin(theta2), cos(theta2)*cos(alpha2), -cos(theta2)*sin(alpha2), a2*sin(theta2);
+     0 , sin(alpha2),cos(alpha2), d2;
+     0 , 0, 0, 1 ];
+
+T32 = [cos(theta3) ,-sin(theta3)*cos(alpha3), sin(theta3)*sin(alpha3), a3*cos(theta3);
+     sin(theta3), cos(theta3)*cos(alpha3), -cos(theta3)*sin(alpha3), a3*sin(theta3);
+     0 , sin(alpha3),cos(alpha3), d3;
+     0 , 0, 0, 1 ];
+
+T43 = [cos(theta4) ,-sin(theta4)*cos(alpha4), sin(theta4)*sin(alpha4), a4*cos(theta4);
+     sin(theta4), cos(theta4)*cos(alpha4), -cos(theta4)*sin(alpha4), a4*sin(theta4);
+     0 , sin(alpha4),cos(alpha4), d4;
+     0 , 0, 0, 1 ];
+
+T54 = [cos(theta5) ,-sin(theta5)*cos(alpha5), sin(theta5)*sin(alpha5), a5*cos(theta5);
+     sin(theta5), cos(theta5)*cos(alpha5), -cos(theta5)*sin(alpha5), a5*sin(theta5);
+     0 , sin(alpha5),cos(alpha5), d5;
+     0 , 0, 0, 1 ];
+
+T50 = T10*T21*T32*T43*T54;
+
+posx=T50(1,4);
+posy=T50(2,4);
+posz=T50(3,4);
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+% --- Executes during object creation, after setting all properties.
+function slider2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textq2_Callback(hObject, eventdata, handles)
+% hObject    handle to textq2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textq2 as text
+%        str2double(get(hObject,'String')) returns contents of textq2 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textq2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textq2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function slider3_Callback(hObject, eventdata, handles)
+% hObject    handle to slider3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%D-H value
+syms theta1 theta2 theta3 theta4 theta5;
+syms posx posy posz ;
+a1 = 150;   alpha1 =  -pi/2;  d1 = 0;
+a2 = 250;   alpha2 = 0;           d2 = 0; 
+a3 = 220;   alpha3 = 0 ;          d3 = 0;
+a4 = 0  ;   alpha4 =  -pi/2;  d4 = 0;
+a5 = 0  ;   alpha5 = 0 ;          d5 = 80; 
+
+%lay gia tri goc tu khoi slider
+theta1=get(handles.slider1,'value');
+set(handles.textq1,'string',num2str(theta1));
+theta2=get(handles.slider2,'value');
+set(handles.textq2,'string',num2str(theta2));
+theta3=get(handles.slider3,'value');
+set(handles.textq3,'string',num2str(theta3));
+theta4=get(handles.slider4,'value');
+set(handles.textq4,'string',num2str(theta4));
+
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+%calculate function
+theta1=theta1*pi/180;
+theta2=theta2*pi/180-pi/2;
+theta3=theta3*pi/180+pi/2;
+theta4=theta4*pi/180-pi/2;
+theta5=0;
+T10 = [cos(theta1) ,-sin(theta1)*cos(alpha1), sin(theta1)*sin(alpha1), a1*cos(theta1);
+     sin(theta1), cos(theta1)*cos(alpha1), -cos(theta1)*sin(alpha1), a1*sin(theta1);
+     0 , sin(alpha1),cos(alpha1), d1;
+     0 , 0, 0, 1 ];
+
+T21 = [cos(theta2) ,-sin(theta2)*cos(alpha2), sin(theta2)*sin(alpha2), a2*cos(theta2);
+     sin(theta2), cos(theta2)*cos(alpha2), -cos(theta2)*sin(alpha2), a2*sin(theta2);
+     0 , sin(alpha2),cos(alpha2), d2;
+     0 , 0, 0, 1 ];
+
+T32 = [cos(theta3) ,-sin(theta3)*cos(alpha3), sin(theta3)*sin(alpha3), a3*cos(theta3);
+     sin(theta3), cos(theta3)*cos(alpha3), -cos(theta3)*sin(alpha3), a3*sin(theta3);
+     0 , sin(alpha3),cos(alpha3), d3;
+     0 , 0, 0, 1 ];
+
+T43 = [cos(theta4) ,-sin(theta4)*cos(alpha4), sin(theta4)*sin(alpha4), a4*cos(theta4);
+     sin(theta4), cos(theta4)*cos(alpha4), -cos(theta4)*sin(alpha4), a4*sin(theta4);
+     0 , sin(alpha4),cos(alpha4), d4;
+     0 , 0, 0, 1 ];
+
+T54 = [cos(theta5) ,-sin(theta5)*cos(alpha5), sin(theta5)*sin(alpha5), a5*cos(theta5);
+     sin(theta5), cos(theta5)*cos(alpha5), -cos(theta5)*sin(alpha5), a5*sin(theta5);
+     0 , sin(alpha5),cos(alpha5), d5;
+     0 , 0, 0, 1 ];
+
+T50 = T10*T21*T32*T43*T54;
+
+posx=T50(1,4);
+posy=T50(2,4);
+posz=T50(3,4);
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+% --- Executes during object creation, after setting all properties.
+function slider3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textq3_Callback(hObject, eventdata, handles)
+% hObject    handle to textq3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textq3 as text
+%        str2double(get(hObject,'String')) returns contents of textq3 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textq3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textq3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function slider4_Callback(hObject, eventdata, handles)
+% hObject    handle to slider4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%D-H value
+syms theta1 theta2 theta3 theta4 theta5;
+syms posx posy posz ;
+a1 = 150;   alpha1 =  -pi/2;  d1 = 0;
+a2 = 250;   alpha2 = 0;           d2 = 0; 
+a3 = 220;   alpha3 = 0 ;          d3 = 0;
+a4 = 0  ;   alpha4 =  -pi/2;  d4 = 0;
+a5 = 0  ;   alpha5 = 0 ;          d5 = 80; 
+
+%lay gia tri goc tu khoi slider
+theta1=get(handles.slider1,'value');
+set(handles.textq1,'string',num2str(theta1));
+theta2=get(handles.slider2,'value');
+set(handles.textq2,'string',num2str(theta2));
+theta3=get(handles.slider3,'value');
+set(handles.textq3,'string',num2str(theta3));
+theta4=get(handles.slider4,'value');
+set(handles.textq4,'string',num2str(theta4));
+
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+%calculate function
+theta1=theta1*pi/180;
+theta2=theta2*pi/180-pi/2;
+theta3=theta3*pi/180+pi/2;
+theta4=theta4*pi/180-pi/2;
+theta5=0;
+T10 = [cos(theta1) ,-sin(theta1)*cos(alpha1), sin(theta1)*sin(alpha1), a1*cos(theta1);
+     sin(theta1), cos(theta1)*cos(alpha1), -cos(theta1)*sin(alpha1), a1*sin(theta1);
+     0 , sin(alpha1),cos(alpha1), d1;
+     0 , 0, 0, 1 ];
+
+T21 = [cos(theta2) ,-sin(theta2)*cos(alpha2), sin(theta2)*sin(alpha2), a2*cos(theta2);
+     sin(theta2), cos(theta2)*cos(alpha2), -cos(theta2)*sin(alpha2), a2*sin(theta2);
+     0 , sin(alpha2),cos(alpha2), d2;
+     0 , 0, 0, 1 ];
+
+T32 = [cos(theta3) ,-sin(theta3)*cos(alpha3), sin(theta3)*sin(alpha3), a3*cos(theta3);
+     sin(theta3), cos(theta3)*cos(alpha3), -cos(theta3)*sin(alpha3), a3*sin(theta3);
+     0 , sin(alpha3),cos(alpha3), d3;
+     0 , 0, 0, 1 ];
+
+T43 = [cos(theta4) ,-sin(theta4)*cos(alpha4), sin(theta4)*sin(alpha4), a4*cos(theta4);
+     sin(theta4), cos(theta4)*cos(alpha4), -cos(theta4)*sin(alpha4), a4*sin(theta4);
+     0 , sin(alpha4),cos(alpha4), d4;
+     0 , 0, 0, 1 ];
+
+T54 = [cos(theta5) ,-sin(theta5)*cos(alpha5), sin(theta5)*sin(alpha5), a5*cos(theta5);
+     sin(theta5), cos(theta5)*cos(alpha5), -cos(theta5)*sin(alpha5), a5*sin(theta5);
+     0 , sin(alpha5),cos(alpha5), d5;
+     0 , 0, 0, 1 ];
+
+T50 = T10*T21*T32*T43*T54;
+
+posx=T50(1,4);
+posy=T50(2,4);
+posz=T50(3,4);
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+% --- Executes during object creation, after setting all properties.
+function slider4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textq4_Callback(hObject, eventdata, handles)
+% hObject    handle to textq4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textq4 as text
+%        str2double(get(hObject,'String')) returns contents of textq4 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textq4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textq4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function sliderPx_Callback(hObject, eventdata, handles)
+% hObject    handle to sliderPx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+posx=get(handles.sliderPx,'value');
+set(handles.textPxn,'string',num2str(posx));
+
+% --- Executes during object creation, after setting all properties.
+function sliderPx_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to sliderPx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textPxn_Callback(hObject, eventdata, handles)
+% hObject    handle to textPxn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPxn as text
+%        str2double(get(hObject,'String')) returns contents of textPxn as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPxn_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPxn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function sliderPy_Callback(hObject, eventdata, handles)
+% hObject    handle to sliderPy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+posy=get(handles.sliderPy,'value');
+set(handles.textPyn,'string',num2str(posy));
+
+% --- Executes during object creation, after setting all properties.
+function sliderPy_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to sliderPy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textPyn_Callback(hObject, eventdata, handles)
+% hObject    handle to textPyn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPyn as text
+%        str2double(get(hObject,'String')) returns contents of textPyn as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPyn_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPyn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function sliderPz_Callback(hObject, eventdata, handles)
+% hObject    handle to sliderPz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+posz=get(handles.sliderPz,'value');
+set(handles.textPzn,'string',num2str(posz));
+
+% --- Executes during object creation, after setting all properties.
+function sliderPz_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to sliderPz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function textPzn_Callback(hObject, eventdata, handles)
+% hObject    handle to textPzn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPzn as text
+%        str2double(get(hObject,'String')) returns contents of textPzn as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPzn_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPzn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function textPx_Callback(hObject, eventdata, handles)
+% hObject    handle to textPx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPx as text
+%        str2double(get(hObject,'String')) returns contents of textPx as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPx_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function textPy_Callback(hObject, eventdata, handles)
+% hObject    handle to textPy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPy as text
+%        str2double(get(hObject,'String')) returns contents of textPy as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPy_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function textPz_Callback(hObject, eventdata, handles)
+% hObject    handle to textPz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of textPz as text
+%        str2double(get(hObject,'String')) returns contents of textPz as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function textPz_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textPz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in STOP.
+function STOP_Callback(hObject, eventdata, handles)
+% hObject    handle to STOP (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+close;
+
+% --- Executes on button press in INVERSE.
+function INVERSE_Callback(hObject, eventdata, handles)
+% hObject    handle to INVERSE (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+global var;
+syms theta1 theta2 theta3 theta4 theta5;
+syms m a b c r k a3;
+posx =str2num(get(handles.textPxn,'string'));
+posy =str2num(get(handles.textPyn,'string'));
+posz =str2num(get(handles.textPzn,'string'));
+set(handles.sliderPx,'value',posx);
+set(handles.sliderPy,'value',posy);
+set(handles.sliderPz,'value',posz);
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+%phuong trinh dong hoc nguoc
+k=0;
+% theta1
+theta1 = atan2(posy,posx);
+% theta2
+m = posx*cos(theta1)+posy*sin(theta1)-150;
+a = - 500*m; b = 40000+500*posz ;c = -20500 - m^2 - posz^2 -160*posz ; r = sqrt(a^2+b^2);
+          %theta2 = atan2(c,sqrt(r^2-c^2)) - atan2(a,b);
+          %or
+          theta2 = atan2(c,-sqrt(r^2-c^2)) - atan2(a,b);
+%theta3
+a3 = (-m*sin(theta2)-(posz+80)*cos(theta2))/220;
+          theta3 = asin(a3); %K la so nguyen
+          %or
+          %theta3 = pi - asin(a3)+k*2*pi;
+% theta4
+          theta4 = -theta2 -theta3;
+% theta5
+          theta5 = pi/2 + k*pi;
+%
+theta1=theta1*180/pi;
+theta2=theta2*180/pi+90;
+theta3=theta3*180/pi-90;
+theta4=theta4*180/pi+90;
+theta5=0;
+guidata(hObject,handles);
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+set(handles.textq1,'string',num2str(theta1));
+set(handles.textq2,'string',num2str(theta2));
+set(handles.textq3,'string',num2str(theta3));
+set(handles.textq4,'string',num2str(theta4));
+
+set(handles.slider1,'value',theta1);
+set(handles.slider2,'value',theta2);
+set(handles.slider3,'value',theta3);
+set(handles.slider4,'value',theta4);
+
+% --- Executes on button press in DEFAULT.
+function DEFAULT_Callback(hObject, eventdata, handles)
+% hObject    handle to DEFAULT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+ModelName = 'FANU_LR_MATE_100IB_ROBOT';
+
+%D-H value
+syms theta1 theta2 theta3 theta4 theta5;
+syms posx posy posz ;
+a1 = 150;   alpha1 =  -pi/2;  d1 = 0;
+a2 = 250;   alpha2 = 0;           d2 = 0; 
+a3 = 220;   alpha3 = 0 ;          d3 = 0;
+a4 = 0  ;   alpha4 =  -pi/2;  d4 = 0;
+a5 = 0  ;   alpha5 = 0 ;          d5 = 80; 
+
+%lay gia tri goc tu khoi slider
+theta1=0;
+theta2=0;
+theta3=0;
+theta4=0;
+theta5=0;
+%gan gia tri goc
+set_param([ModelName '/SliderGain1'], 'Gain', num2str(-theta1));
+set_param([ModelName '/SliderGain2'], 'Gain', num2str(-theta2));
+set_param([ModelName '/SliderGain3'], 'Gain', num2str(theta3));
+set_param([ModelName '/SliderGain4'], 'Gain', num2str(theta4));
+
+%calculate function
+theta1=theta1*pi/180;
+theta2=theta2*pi/180-pi/2;
+theta3=theta3*pi/180+pi/2;
+theta4=theta4*pi/180-pi/2;
+theta5=0;
+T10 = [cos(theta1) ,-sin(theta1)*cos(alpha1), sin(theta1)*sin(alpha1), a1*cos(theta1);
+     sin(theta1), cos(theta1)*cos(alpha1), -cos(theta1)*sin(alpha1), a1*sin(theta1);
+     0 , sin(alpha1),cos(alpha1), d1;
+     0 , 0, 0, 1 ];
+
+T21 = [cos(theta2) ,-sin(theta2)*cos(alpha2), sin(theta2)*sin(alpha2), a2*cos(theta2);
+     sin(theta2), cos(theta2)*cos(alpha2), -cos(theta2)*sin(alpha2), a2*sin(theta2);
+     0 , sin(alpha2),cos(alpha2), d2;
+     0 , 0, 0, 1 ];
+
+T32 = [cos(theta3) ,-sin(theta3)*cos(alpha3), sin(theta3)*sin(alpha3), a3*cos(theta3);
+     sin(theta3), cos(theta3)*cos(alpha3), -cos(theta3)*sin(alpha3), a3*sin(theta3);
+     0 , sin(alpha3),cos(alpha3), d3;
+     0 , 0, 0, 1 ];
+
+T43 = [cos(theta4) ,-sin(theta4)*cos(alpha4), sin(theta4)*sin(alpha4), a4*cos(theta4);
+     sin(theta4), cos(theta4)*cos(alpha4), -cos(theta4)*sin(alpha4), a4*sin(theta4);
+     0 , sin(alpha4),cos(alpha4), d4;
+     0 , 0, 0, 1 ];
+
+T54 = [cos(theta5) ,-sin(theta5)*cos(alpha5), sin(theta5)*sin(alpha5), a5*cos(theta5);
+     sin(theta5), cos(theta5)*cos(alpha5), -cos(theta5)*sin(alpha5), a5*sin(theta5);
+     0 , sin(alpha5),cos(alpha5), d5;
+     0 , 0, 0, 1 ];
+
+T50 = T10*T21*T32*T43*T54;
+posx=T50(1,4);
+posy=T50(2,4);
+posz=T50(3,4);
+
+set(handles.slider1,'value',0);
+set(handles.slider2,'value',0);
+set(handles.slider3,'value',0);
+set(handles.slider4,'value', 0);
+
+set(handles.textq1,'string',num2str(0));
+set(handles.textq2,'string',num2str(0));
+set(handles.textq3,'string',num2str(0));
+set(handles.textq4,'string',num2str(0));
+
+set(handles.textPx,'string',num2str(posx));
+set(handles.textPy,'string',num2str(posy));
+set(handles.textPz,'string',num2str(posz));
+
+set(handles.textPxn,'string',num2str(posx));
+set(handles.textPyn,'string',num2str(posy));
+set(handles.textPzn,'string',num2str(posz));
